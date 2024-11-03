@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Admin\CriteriaPerbadinganRequest;
-use App\Http\Requests\Admin\BobotRequest;
 use App\Models\Alternative;
-use App\Models\Bobot;
 use App\Models\Criteria;
 use App\Models\CriteriaAnalysis;
 use App\Models\CriteriaAnalysisDetail;
@@ -306,22 +304,6 @@ class FreeController extends Controller
                 'criteria_analysis_id' => $criteriaAnalysisId,
                 'criteria_id'          => $criteria->id,
             ], $data);
-            $existingBobot = Bobot::where([
-                'criteria_analysis_id' => $criteriaAnalysisId,
-                'criteria_id'          => $criteria->id,
-            ])->first();
-            // Jika record tidak ada atau value-nya adalah 0, lakukan pembaruan atau pembuatan record
-            if (!$existingBobot || $existingBobot->value == 0) {
-                $bobot = [
-                    'criteria_analysis_id' => $criteriaAnalysisId,
-                    'criteria_id'          => $criteria->id,
-                    'value'                => floatval(0),
-                ];
-                Bobot::updateOrCreate([
-                    'criteria_analysis_id' => $criteriaAnalysisId,
-                    'criteria_id'          => $criteria->id,
-                ], $bobot);
-            }
         }
     }
 
@@ -479,117 +461,6 @@ class FreeController extends Controller
             'normalizations'    => $normalizations,
             'ranks'             => $ranking,
             'ranking'           => $ranking,
-        ]);
-    }
-
-    public function resultAHP(CriteriaAnalysis $criteriaAnalysis)
-    {
-        $criteriaAnalysis->load('priorityValues');
-        $criterias          = CriteriaAnalysisDetail::getSelectedCriterias($criteriaAnalysis->id);
-        $criteriaIds        = $criterias->pluck('id');
-        $dividers           = Alternative::getDividerByCriteria($criterias);
-        $criterias          = Criteria::all();
-        $numberOfCriterias  = count($criterias);
-        $alternatives       = Alternative::all();
-        $alternative1s       = Alternative::getAlternativesByCriteria($criteriaIds);
-        $normalizations     = $this->_hitungNormalisasi($dividers, $alternative1s);
-        $data = $this->prepareAnalysisData($criteriaAnalysis);
-        $isAbleToRank = $this->checkIfAbleToRank();
-        try {
-            $ranking    = $this->_finalRanking($criteriaAnalysis->bobots, $normalizations);
-        } catch (\Exception $exception) {
-            return back()->withError($exception->getMessage())->withInput();
-        }
-        return view('pages.free.ahp', [
-            'title'             => 'Perhitungan AHP',
-            'criteriaAnalysis'  => $criteriaAnalysis,
-            'criteria_analysis' => $criteriaAnalysis,
-            'dividers'          => $dividers,
-            'totalSums'         => $data['totalSums'],
-            'ruleRC'            => $data['ruleRC'],
-            'isAbleToRank'      => $isAbleToRank,
-            'numberOfCriterias' => $numberOfCriterias,
-            'alternatives'      => $alternatives,
-            'criterias'         => $criterias,
-            'normalizations'    => $normalizations,
-        ]);
-    }
-
-    public function detailAHP(CriteriaAnalysis $criteriaAnalysis)
-    {
-        $data = $this->prepareAnalysisData($criteriaAnalysis);
-        $isAbleToRank = $this->checkIfAbleToRank();
-        $criteriaAnalysis->load('priorityValues');
-        $criterias          = CriteriaAnalysisDetail::getSelectedCriterias($criteriaAnalysis->id);
-        $criteriaIds        = $criterias->pluck('id');
-        $dividers           = Alternative::getDividerByCriteria($criterias);
-        $criterias          = Criteria::all();
-        $numberOfCriterias  = count($criterias);
-        $alternatives       = Alternative::all();
-        $alternative1s      = Alternative::getAlternativesByCriteria($criteriaIds);
-        $normalizations     = $this->_hitungNormalisasi($dividers, $alternative1s);
-        try {
-            $ranking    = $this->_finalRanking($criteriaAnalysis->bobots, $normalizations);
-        } catch (\Exception $exception) {
-            return back()->withError($exception->getMessage())->withInput();
-        }
-        return view('pages.free.ahpDetail', [
-            'title'             => 'Detail Perhitungan AHP',
-            'criteriaAnalysis'  => $criteriaAnalysis,
-            'criteria_analysis' => $criteriaAnalysis,
-            'totalSums'         => $data['totalSums'],
-            'ruleRC'            => $data['ruleRC'],
-            'isAbleToRank'      => $isAbleToRank,
-            'dividers'          => $dividers,
-            'numberOfCriterias' => $numberOfCriterias,
-            'alternatives'      => $alternatives,
-            'criterias'         => $criterias,
-            'normalizations'    => $normalizations,
-        ]);
-    }
-
-    public function resultSAW(CriteriaAnalysis $criteriaAnalysis)
-    {
-        $criteriaAnalysis->load('bobots');
-        $criterias      = CriteriaAnalysisDetail::getSelectedCriterias($criteriaAnalysis->id);
-        $criteriaIds    = $criterias->pluck('id');
-        $alternatives   = Alternative::getAlternativesByCriteria($criteriaIds);
-        $dividers       = Alternative::getDividerByCriteria($criterias);
-        $normalizations = $this->_hitungNormalisasi($dividers, $alternatives);
-        try {
-            $ranking    = $this->_finalRanking($criteriaAnalysis->bobots, $normalizations);
-        } catch (\Exception $exception) {
-            return back()->withError($exception->getMessage())->withInput();
-        }
-        return view('pages.free.saw', [
-            'title'            => 'Perhitungan SAW',
-            'dividers'         => $dividers,
-            'normalizations'   => $normalizations,
-            'criteriaAnalysis' => $criteriaAnalysis,
-            'criterias'        => Criteria::all(),
-            'ranks'            => $ranking
-        ]);
-    }
-
-    public function detailSAW(CriteriaAnalysis $criteriaAnalysis)
-    {
-        $criterias      = CriteriaAnalysisDetail::getSelectedCriterias($criteriaAnalysis->id);
-        $criteriaIds    = $criterias->pluck('id');
-        $alternatives   = Alternative::getAlternativesByCriteria($criteriaIds);
-        $dividers       = Alternative::getDividerByCriteria($criterias);
-        $normalizations = $this->_hitungNormalisasi($dividers, $alternatives);
-        try {
-            $ranking    = $this->_finalRanking($criteriaAnalysis->bobots, $normalizations);
-        } catch (\Exception $exception) {
-            return back()->withError($exception->getMessage())->withInput();
-        }
-        $title = 'Detail Perhitungan SAW';
-        return view('pages.free.sawDetail', [
-            'criteriaAnalysis' => $criteriaAnalysis,
-            'dividers'         => $dividers,
-            'normalizations'   => $normalizations,
-            'ranking'          => $ranking,
-            'title'            => $title
         ]);
     }
 

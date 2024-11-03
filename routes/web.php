@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\AhpController;
 use App\Http\Controllers\Admin\AlternativeController;
 use App\Http\Controllers\Admin\CriteriaController;
 use App\Http\Controllers\Admin\SaranController;
@@ -8,7 +7,6 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\JenisController;
 use App\Http\Controllers\Admin\KombinasiController;
 use App\Http\Controllers\Admin\ProfileController;
-use App\Http\Controllers\Admin\SawController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WisataController;
 use App\Http\Controllers\Auth\LoginController;
@@ -89,14 +87,4 @@ Route::prefix('dashboard')
             ->name('kombinasi.result');
         Route::get('perhitungan/metode/kombinasi/detail/{criteria_analysis}', [KombinasiController::class, 'detail'])
             ->name('kombinasi.detail');
-        // ahp
-        Route::get('perhitungan/metode/ahp/{criteria_analysis}', [AhpController::class, 'result'])
-            ->name('ahp.result');
-        Route::get('perhitungan/metode/ahp/detail/{criteria_analysis}', [AhpController::class, 'detail'])
-            ->name('ahp.detail');
-        // saw
-        Route::get('perhitungan/metode/saw/{criteria_analysis}', [SawController::class, 'result'])
-            ->name('saw.result');
-        Route::get('perhitungan/metode/saw/detail/{criteria_analysis}', [SawController::class, 'detail'])
-            ->name('saw.detail');
     });

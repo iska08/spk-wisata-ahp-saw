@@ -4,13 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CriteriaPerbadinganRequest;
-use App\Http\Requests\Admin\BobotRequest;
 use App\Models\Alternative;
 use App\Models\Criteria;
 use App\Models\CriteriaAnalysis;
 use App\Models\CriteriaAnalysisDetail;
 use App\Models\PriorityValue;
-use App\Models\Bobot;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -177,28 +175,6 @@ class KombinasiController extends Controller
         ]);
     }
 
-    public function showBobot(CriteriaAnalysis $criteriaAnalysis)
-    {
-        if (auth()->user()->level !== 'ADMIN') {
-            return redirect()->back()->with('error', 'Anda Tidak Memiliki Ijin Untuk Melakukan Tindakan Ini.');
-        }
-
-        $criteriaAnalysis->load('details');
-        $details        = filterDetailResults($criteriaAnalysis->details);
-        $isDoneCounting = Bobot::where('criteria_analysis_id', $criteriaAnalysis->id)->exists();
-        $criteriaBobots = Criteria::join('bobots', 'criterias.id', '=', 'bobots.criteria_id')
-            ->where('bobots.criteria_analysis_id', $criteriaAnalysis->id)
-            ->get();
-        $criteriaAnalysis->unsetRelation('details');
-        return view('pages.admin.kombinasi.bobot', [
-            'title'             => 'Bobot Kriteria',
-            'criteria_analysis' => $criteriaAnalysis,
-            'details'           => $details,
-            'isDoneCounting'    => $isDoneCounting,
-            'criteriaBobots'    => $criteriaBobots,
-        ]);
-    }
-
     /**
      * Show the form for editing the specified resource.
      *
@@ -234,23 +210,6 @@ class KombinasiController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Nilai Perbandingan Telah Diperbarui!');
-    }
-
-    public function updateBobot(BobotRequest $request)
-    {
-        if (auth()->user()->level !== 'ADMIN') {
-            return redirect()->back()->with('error', 'Anda Tidak Memiliki Ijin Untuk Melakukan Tindakan Ini.');
-        }
-
-        $validated = $request->validated();
-        foreach ($validated['bobot_id'] as $key => $id) {
-            Bobot::where('id', $id)->update([
-                'value'  => $validated['value'][$key],
-            ]);
-        }
-        return redirect()
-            ->back()
-            ->with('success', 'Nilai Bobot Telah Diperbarui!');
     }
 
     // menghitung perbandingan
@@ -338,22 +297,6 @@ class KombinasiController extends Controller
                 'criteria_analysis_id' => $criteriaAnalysisId,
                 'criteria_id'          => $criteria->id,
             ], $data);
-            $existingBobot = Bobot::where([
-                'criteria_analysis_id' => $criteriaAnalysisId,
-                'criteria_id'          => $criteria->id,
-            ])->first();
-            // Jika record tidak ada atau value-nya adalah 0, lakukan pembaruan atau pembuatan record
-            if (!$existingBobot || $existingBobot->value == 0) {
-                $bobot = [
-                    'criteria_analysis_id' => $criteriaAnalysisId,
-                    'criteria_id'          => $criteria->id,
-                    'value'                => floatval(0),
-                ];
-                Bobot::updateOrCreate([
-                    'criteria_analysis_id' => $criteriaAnalysisId,
-                    'criteria_id'          => $criteria->id,
-                ], $bobot);
-            }
         }
     }
 
